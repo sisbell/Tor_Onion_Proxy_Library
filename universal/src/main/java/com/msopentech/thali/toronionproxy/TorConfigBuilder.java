@@ -92,32 +92,19 @@ public final class TorConfigBuilder {
         return this;
     }
 
-    public TorConfigBuilder bridgeCustom(String config) {
-        if (!isNullOrEmpty(config)) {
-            buffer.append("Bridge ").append(config).append('\n');
-        }
-        return this;
-    }
-
-    public TorConfigBuilder configurePluggableTransportsFromSettings(File pluggableTransportClient) throws IOException {
-        List<String> supportedBridges = settings.getListOfSupportedBridges();
-        if (pluggableTransportClient == null || !settings.hasBridges() || supportedBridges.size() < 1) {
+    public TorConfigBuilder configurePluggableTransports(File pluggableTransportClient,
+                                                         List<BridgeType> bridgeTypes)
+            throws IOException {
+        if (pluggableTransportClient == null) {
             return this;
         }
-
         if (!pluggableTransportClient.exists() || !pluggableTransportClient.canExecute()) {
             throw new IOException("Bridge binary does not exist: " + pluggableTransportClient
                     .getCanonicalPath());
         }
-
-        if (supportedBridges.contains("obfs3") || supportedBridges.contains("obfs4")) {
-            transportPluginObfs(pluggableTransportClient.getCanonicalPath());
+        for (BridgeType bridgeType : bridgeTypes) {
+            writeBridgeTransport(pluggableTransportClient, bridgeType);
         }
-        if (supportedBridges.contains("meek")) {
-            transportPluginMeek(pluggableTransportClient.getCanonicalPath());
-        }
-        String type = supportedBridges.contains("meek") ? "meek_lite" : "obfs4";
-        addBridgesFromResources(type, 2);
         return this;
     }
 
@@ -151,6 +138,27 @@ public final class TorConfigBuilder {
     @SettingsConfig
     public TorConfigBuilder controlPortWriteToFileFromConfig() {
         return controlPortWriteToFile(context.config.getControlPortFile().getAbsolutePath());
+    }
+
+    public TorConfigBuilder customBridges(List<String> bridges) {
+        if(bridges.size() > 1) {
+            Collections.shuffle(bridges, new Random(System.nanoTime()));
+        }
+        for (String bridge : bridges) {
+            if(!isNullOrEmpty(bridge)) {
+                line("Bridge " + bridge);
+            }
+        }
+        return this;
+    }
+
+    @SettingsConfig
+    public TorConfigBuilder customBridgesFromSettings() {
+        if (!settings.hasBridges() || !hasCustomBridges()) {
+            return this;
+        }
+        List<String> bridges = settings.getCustomBridges();
+        return customBridges(bridges);
     }
 
     public TorConfigBuilder debugLogs() {
@@ -270,6 +278,20 @@ public final class TorConfigBuilder {
                 e.printStackTrace();
             }
         }
+        return this;
+    }
+
+    /**
+     * Write up two bridges from packaged bridge list if bridges option is enabled and if no custom bridges
+     * have been defined by the user.
+     */
+    @SettingsConfig
+    public TorConfigBuilder predefinedBridgesFromSettings() {
+        if (!settings.hasBridges() || !hasPredefinedBridges() || hasCustomBridges()) {
+            return this;
+        }
+        List<BridgeType> bridgeTypes = settings.getBridgeTypes();
+        addPredefinedBridgesFromResources(bridgeTypes, 2);
         return this;
     }
 
@@ -413,6 +435,9 @@ public final class TorConfigBuilder {
     @SettingsConfig
     public TorConfigBuilder socksPortFromSettings() {
         String socksPort = settings.getSocksPort();
+        if(isNullOrEmpty(socksPort)) {
+            return this;
+        }
         if (socksPort.indexOf(':') != -1) {
             socksPort = socksPort.split(":")[1];
         }
@@ -489,7 +514,12 @@ public final class TorConfigBuilder {
 
     @SettingsConfig
     public TorConfigBuilder useBridgesFromSettings() {
-        return !settings.hasBridges() ? dontUseBridges() : this;
+        if(settings.hasBridges() && (hasCustomBridges() || hasPredefinedBridges())) {
+            useBridges();
+        } else {
+            dontUseBridges();
+        }
+        return this;
     }
 
     public TorConfigBuilder virtualAddressNetwork(String address) {
@@ -518,14 +548,25 @@ public final class TorConfigBuilder {
      * </code>
      *
      */
-    TorConfigBuilder addBridgesFromResources(String type, int maxBridges) throws IOException {
-        if(settings.hasBridges()) {
-            InputStream bridgesStream = context.getInstaller().openBridgesStream();
-            int formatType = bridgesStream.read();
-            if(formatType == 0) {
-                addBridges(bridgesStream, type, maxBridges);
-            } else {
-                addCustomBridges(bridgesStream);
+    TorConfigBuilder addPredefinedBridgesFromResources(List<BridgeType> types, int maxBridges) {
+        ArrayList<String> bridgeTypes = new ArrayList<>();
+        for(BridgeType bridgeType : types) {
+            bridgeTypes.add(bridgeType.name().toLowerCase());
+        }
+        if(settings.hasBridges() && hasPredefinedBridges() && !hasCustomBridges()) {
+            InputStream bridgesStream = null;
+            try {
+                bridgesStream = context.getInstaller().openBridgesStream();
+                addPredefinedBridgesFromStream(bridgesStream, bridgeTypes, maxBridges);
+            } catch(IOException e) {
+                e.printStackTrace();
+            } finally {
+                if(bridgesStream != null) {
+                    try {
+                        bridgesStream.close();
+                    } catch (IOException e) {
+                    }
+                }
             }
         }
         return this;
@@ -534,41 +575,31 @@ public final class TorConfigBuilder {
     /**
      * Add bridges from bridges.txt file.
      */
-    private void addBridges(InputStream input, String bridgeType, int maxBridges) {
-        if (input == null || isNullOrEmpty(bridgeType) || maxBridges < 1) {
+    private void addPredefinedBridgesFromStream(InputStream input, List<String> bridgeTypes, int maxBridges) {
+        if (input == null || maxBridges < 1 || bridgeTypes.isEmpty()) {
             return;
         }
-        boolean hasAddedBridge = false;
         List<Bridge> bridges = readBridgesFromStream(input);
-        Collections.shuffle(bridges, new Random(System.nanoTime()));
+        if(bridges.size() > 1) {
+            Collections.shuffle(bridges, new Random(System.nanoTime()));
+        }
         int bridgeCount = 0;
         for (Bridge b : bridges) {
-            if (b.type.equals(bridgeType)) {
+            if(bridgeTypes.contains(b.type)) {
                 bridge(b.type, b.config);
-                hasAddedBridge = true;
                 if (++bridgeCount > maxBridges)
                     break;
             }
         }
-        if(hasAddedBridge) useBridges();
     }
 
-    /**
-     * Add custom bridges defined by the user. These will have a bridgeType of 'custom' as the first field.
-     */
-    private void addCustomBridges(InputStream input) {
-        if (input == null) {
-            return;
-        }
-        boolean hasAddedBridge = false;
-        List<Bridge> bridges = readCustomBridgesFromStream(input);
-        for (Bridge b : bridges) {
-            if (b.type.equals("custom")) {
-                bridgeCustom(b.config);
-                hasAddedBridge = true;
-            }
-        }
-        if(hasAddedBridge) useBridges();
+
+    private boolean hasCustomBridges() {
+        return !settings.getCustomBridges().isEmpty();
+    }
+
+    private boolean hasPredefinedBridges() {
+        return !settings.getBridgeTypes().isEmpty();
     }
 
     private static List<Bridge> readBridgesFromStream(InputStream input)  {
@@ -604,6 +635,17 @@ public final class TorConfigBuilder {
             e.printStackTrace();
         }
         return bridges;
+    }
+
+    private void writeBridgeTransport(File pluggableTransportClient, BridgeType bridgeType) throws IOException {
+        switch (bridgeType) {
+            case MEEK_LITE:
+                transportPluginMeek(pluggableTransportClient.getCanonicalPath());
+                break;
+            case OBFS3:
+            case OBFS4:
+                transportPluginObfs(pluggableTransportClient.getCanonicalPath());
+        }
     }
 
     private static class Bridge {

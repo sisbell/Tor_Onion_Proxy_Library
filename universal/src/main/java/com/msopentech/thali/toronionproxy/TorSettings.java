@@ -7,6 +7,8 @@ public interface TorSettings {
 
     String dnsPort();
 
+    List<String> getCustomBridges();
+
     String getCustomTorrc();
 
     String getEntryNodes();
@@ -17,10 +19,7 @@ public interface TorSettings {
 
     int getHttpTunnelPort();
 
-    /**
-     * Returns a list of supported bridges. The string value will include the name: meek_lite, obfs4
-     */
-    List<String> getListOfSupportedBridges();
+    List<BridgeType> getBridgeTypes();
 
     String getProxyHost();
 
