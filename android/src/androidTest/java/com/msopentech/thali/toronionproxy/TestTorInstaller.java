@@ -15,7 +15,7 @@ public class TestTorInstaller extends AndroidTorInstaller {
     }
 
     @Override
-    public InputStream openBridgesStream() throws IOException {
+    public InputStream openDefaultBridgesStream() throws IOException {
         return context.getResources().openRawResource(R.raw.bridges);
     }
 }

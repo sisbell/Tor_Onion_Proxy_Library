@@ -115,7 +115,12 @@ public class JavaTorInstaller extends TorInstaller {
      * TorSettings.hasBridges is flagged to false to avoid this method being called.
      */
     @Override
-    public InputStream openBridgesStream() throws IOException {
+    public InputStream openDefaultBridgesStream() throws IOException {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean hasDefaultBridgesStream() {
+        return false;
     }
 }

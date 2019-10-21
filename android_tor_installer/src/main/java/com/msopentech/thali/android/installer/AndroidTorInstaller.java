@@ -27,11 +27,11 @@ import java.util.concurrent.TimeoutException;
  * Installs Tor for an Android app. This is a wrapper around the <code>TorResourceInstaller</code>.
  *
  * Since this class only deals with installing Tor, it is up to the developer to implement
- * the <code>openBridgesStream</code> which will give the bridges for pluggable transports. A
+ * the <code>openDefaultBridgesStream</code> which will give the bridges for pluggable transports. A
  * typical implementation looks like:
  *
  * <code>
- *     public InputStream openBridgesStream() throws IOException {
+ *     public InputStream openDefaultBridgesStream() throws IOException {
  *         return context.getResources().openRawResource(R.raw.bridges);
  *     }
  * </code>
