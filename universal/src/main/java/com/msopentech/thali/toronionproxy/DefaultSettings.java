@@ -13,9 +13,13 @@ public class DefaultSettings implements TorSettings {
         return true;
     }
 
+    public String getDnsHost() {
+        return null;
+    }
+
     @Override
-    public String dnsPort() {
-        return "5400";
+    public Integer getDnsPort() {
+        return 5400;
     }
 
     @Override
@@ -44,8 +48,13 @@ public class DefaultSettings implements TorSettings {
     }
 
     @Override
-    public int getHttpTunnelPort() {
-        return 8118;
+    public String getHttpTunnelHost() {
+        return null;
+    }
+
+    @Override
+    public Integer getHttpTunnelPort() {
+        return null;
     }
 
     @Override
@@ -64,7 +73,7 @@ public class DefaultSettings implements TorSettings {
     }
 
     @Override
-    public String getProxyPort() {
+    public Integer getProxyPort() {
         return null;
     }
 
@@ -74,7 +83,7 @@ public class DefaultSettings implements TorSettings {
     }
 
     @Override
-    public String getProxySocks5ServerPort() {
+    public Integer getProxySocks5ServerPort() {
         return null;
     }
 
@@ -99,7 +108,7 @@ public class DefaultSettings implements TorSettings {
     }
 
     @Override
-    public int getRelayPort() {
+    public Integer getRelayPort() {
         return 9001;
     }
 
@@ -170,7 +179,7 @@ public class DefaultSettings implements TorSettings {
 
     @Override
     public boolean isAutomapHostsOnResolve() {
-        return true;
+        return false;
     }
 
     @Override
@@ -184,8 +193,13 @@ public class DefaultSettings implements TorSettings {
     }
 
     @Override
-    public String transPort() {
-        return "9040";
+    public String getTransparentProxyAddress() {
+        return null;
+    }
+
+    @Override
+    public Integer getTransparentProxyPort() {
+        return null;
     }
 
     @Override

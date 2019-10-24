@@ -5,11 +5,13 @@ import java.util.List;
 public interface TorSettings {
     boolean disableNetwork();
 
-    String dnsPort();
-
     List<String> getCustomBridges();
 
     String getCustomTorrc();
+
+    String getDnsHost();
+
+    Integer getDnsPort();
 
     String getEntryNodes();
 
@@ -17,7 +19,9 @@ public interface TorSettings {
 
     String getExitNodes();
 
-    int getHttpTunnelPort();
+    String getHttpTunnelHost();
+
+    Integer getHttpTunnelPort();
 
     List<BridgeType> getBridgeTypes();
 
@@ -25,11 +29,11 @@ public interface TorSettings {
 
     String getProxyPassword();
 
-    String getProxyPort();
+    Integer getProxyPort();
 
     String getProxySocks5Host();
 
-    String getProxySocks5ServerPort();
+    Integer getProxySocks5ServerPort();
 
     String getProxyType();
 
@@ -39,9 +43,13 @@ public interface TorSettings {
 
     String getRelayNickname();
 
-    int getRelayPort();
+    Integer getRelayPort();
 
     String getSocksPort();
+
+    String getTransparentProxyAddress();
+
+    Integer getTransparentProxyPort();
 
     String getVirtualAddressNetwork();
 
@@ -72,8 +80,6 @@ public interface TorSettings {
     boolean isRelay();
 
     boolean runAsDaemon();
-
-    String transPort();
 
     boolean useSocks5();
 }

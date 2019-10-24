@@ -183,14 +183,13 @@ public final class TorConfigBuilder {
         return settings.disableNetwork() ? disableNetwork() : this;
     }
 
-    public TorConfigBuilder dnsPort(String dnsPort) {
-        if (!isNullOrEmpty(dnsPort)) buffer.append("DNSPort ").append(dnsPort).append('\n');
-        return this;
+    public TorConfigBuilder dnsPort(String dnsHost, Integer dnsPort) {
+        return addAddress("DNSPort", dnsHost, dnsPort, null);
     }
 
     @SettingsConfig
     public TorConfigBuilder dnsPortFromSettings() {
-        return dnsPort(settings.dnsPort());
+        return dnsPort(settings.getDnsHost(), settings.getDnsPort());
     }
 
     public TorConfigBuilder dontUseBridges() {
@@ -226,18 +225,13 @@ public final class TorConfigBuilder {
         return this;
     }
 
-    public TorConfigBuilder httpTunnelPort(int port, String isolationFlags) {
-        buffer.append("HTTPTunnelPort ").append(port);
-        if (!isNullOrEmpty(isolationFlags)) {
-            buffer.append(" ").append(isolationFlags);
-        }
-        buffer.append('\n');
-        return this;
+    public TorConfigBuilder httpTunnelPort(String host, Integer port, String isolationFlags) {
+        return addAddress("HTTPTunnelPort", host, port, isolationFlags);
     }
 
     @SettingsConfig
     public TorConfigBuilder httpTunnelPortFromSettings() {
-        return httpTunnelPort(settings.getHttpTunnelPort(),
+        return httpTunnelPort(settings.getHttpTunnelHost(), settings.getHttpTunnelPort(),
                 settings.hasIsolationAddressFlagForTunnel() ? "IsolateDestAddr" : null);
     }
 
@@ -308,7 +302,7 @@ public final class TorConfigBuilder {
     /**
      * Set socks5 proxy with no authentication. This can be set if yo uare using a VPN.
      */
-    public TorConfigBuilder proxySocks5(String host, String port) {
+    public TorConfigBuilder proxySocks5(String host, Integer port) {
         buffer.append("socks5Proxy ").append(host).append(':').append(port).append('\n');
         return this;
     }
@@ -324,9 +318,9 @@ public final class TorConfigBuilder {
      * Sets proxyWithAuthentication information. If proxyType, proxyHost or proxyPort is empty,
      * then this method does nothing.
      */
-    public TorConfigBuilder proxyWithAuthentication(String proxyType, String proxyHost, String
+    public TorConfigBuilder proxyWithAuthentication(String proxyType, String proxyHost, Integer
             proxyPort, String proxyUser, String proxyPass) {
-        if (!isNullOrEmpty(proxyType) && !isNullOrEmpty(proxyHost) && !isNullOrEmpty(proxyPort)) {
+        if (!isNullOrEmpty(proxyType) && !isNullOrEmpty(proxyHost) && proxyPort != null) {
             buffer.append(proxyType).append("Proxy ").append(proxyHost).append(':').append
                     (proxyPort).append('\n');
 
@@ -404,7 +398,7 @@ public final class TorConfigBuilder {
 
     @SettingsConfig
     public TorConfigBuilder safeSocksFromSettings() {
-        return !settings.hasSafeSocks() ? safeSocksDisable() : safeSocksEnable();
+        return settings.hasSafeSocks() ? safeSocksEnable() : this;
     }
 
     public TorConfigBuilder setGeoIpFiles() throws IOException {
@@ -461,7 +455,7 @@ public final class TorConfigBuilder {
 
     @SettingsConfig
     public TorConfigBuilder strictNodesFromSettings() {
-        return settings.hasStrictNodes() ? strictNodesEnable() : strictNodesDisable();
+        return settings.hasStrictNodes() ? strictNodesEnable() : this;
     }
 
     public TorConfigBuilder testSocksDisable() {
@@ -470,13 +464,13 @@ public final class TorConfigBuilder {
     }
 
     public TorConfigBuilder testSocksEnable() {
-        buffer.append("TestSocks 0").append('\n');
+        buffer.append("TestSocks 1").append('\n');
         return this;
     }
 
     @SettingsConfig
     public TorConfigBuilder testSocksFromSettings() {
-        return !settings.hasTestSocks() ? testSocksDisable() : this;
+        return settings.hasTestSocks() ? testSocksEnable() : this;
     }
 
     @SettingsConfig
@@ -485,15 +479,13 @@ public final class TorConfigBuilder {
                 line(new String(settings.getCustomTorrc().getBytes("US-ASCII"))) : this;
     }
 
-    public TorConfigBuilder transPort(String transPort) {
-        if (!isNullOrEmpty(transPort))
-            buffer.append("TransPort ").append(transPort).append('\n');
-        return this;
+    public TorConfigBuilder transparentProxyPort(String address, Integer transPort) {
+        return addAddress("TransPort", address, transPort, null);
     }
 
     @SettingsConfig
     public TorConfigBuilder transPortFromSettings() {
-        return transPort(settings.transPort());
+        return transparentProxyPort(settings.getTransparentProxyAddress(), settings.getTransparentProxyPort());
     }
 
     public TorConfigBuilder transportPluginMeek(String clientPath) {
@@ -516,8 +508,6 @@ public final class TorConfigBuilder {
     public TorConfigBuilder useBridgesFromSettings() {
         if(settings.hasBridges() && (hasCustomBridges() || hasPredefinedBridges())) {
             useBridges();
-        } else {
-            dontUseBridges();
         }
         return this;
     }
@@ -569,6 +559,26 @@ public final class TorConfigBuilder {
                 }
             }
         }
+        return this;
+    }
+
+    TorConfigBuilder addAddress(String fieldName, String address, Integer port, String flags) {
+        if(isNullOrEmpty(address) && port == null) {
+            return this;
+        }
+        buffer.append(fieldName).append(" ");
+        if(!isNullOrEmpty(address)) {
+            buffer.append(address).append(":");
+        }
+        if (port != null) {
+            buffer.append(port <= 0 ? "auto" : port);
+        } else {
+            buffer.append("auto");
+        }
+        if(!isNullOrEmpty(flags)) {
+            buffer.append(" ").append(flags);
+        }
+        buffer.append('\n');
         return this;
     }
 

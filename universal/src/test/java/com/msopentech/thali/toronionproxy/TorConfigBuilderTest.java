@@ -62,6 +62,9 @@ public class TorConfigBuilderTest {
         assertTrue(result.isEmpty());
     }
 
+    /**
+     * SHould be empty
+     */
     @Test
     public void testUseBridgesFromSettingsFalse() {
         TorSettings torSettings = mock(TorSettings.class);
@@ -72,7 +75,7 @@ public class TorConfigBuilderTest {
 
         builder.useBridgesFromSettings();
         String result = builder.asString();
-        assertEquals("UseBridges 0\n", result);
+        assertEquals("", result);
     }
 
     @Test
@@ -85,7 +88,7 @@ public class TorConfigBuilderTest {
 
         builder.useBridgesFromSettings();
         String result = builder.asString();
-        assertEquals("UseBridges 0\n", result);
+        assertEquals("", result);
     }
 
     @Test
@@ -161,7 +164,7 @@ public class TorConfigBuilderTest {
     }
 
     @Test
-    public void textConfigureTransportsAddedWhenNoBridges() throws IOException {
+    public void testConfigureTransportsAddedWhenNoBridges() throws IOException {
         TorSettings torSettings = mock(TorSettings.class);
         when(torSettings.hasBridges()).thenReturn(false);
         OnionProxyContext context = mock(OnionProxyContext.class);
@@ -178,7 +181,7 @@ public class TorConfigBuilderTest {
     }
 
     @Test
-    public void textConfigureTransportsMeek() throws IOException {
+    public void testConfigureTransportsMeek() throws IOException {
         TorSettings torSettings = mock(TorSettings.class);
         when(torSettings.hasBridges()).thenReturn(false);
         OnionProxyContext context = mock(OnionProxyContext.class);
@@ -191,5 +194,90 @@ public class TorConfigBuilderTest {
         String result = builder.asString();
         assertTrue(result.contains("ClientTransportPlugin meek_lite exec"));
         assertFalse(result.contains("ClientTransportPlugin obfs4 exec"));
+    }
+
+    @Test
+    public void testHttpTunnelPort() throws IOException {
+        TorSettings torSettings = mock(TorSettings.class);
+        when(torSettings.getHttpTunnelHost()).thenReturn("192.1.1.1");
+        when(torSettings.getHttpTunnelPort()).thenReturn(8080);
+        when(torSettings.hasIsolationAddressFlagForTunnel()).thenReturn(true);
+
+        OnionProxyContext context = mock(OnionProxyContext.class);
+        when(context.getSettings()).thenReturn(torSettings);
+        TorConfigBuilder builder = new TorConfigBuilder(context);
+        builder.httpTunnelPortFromSettings();
+        String result = builder.asString();
+        assertEquals("HTTPTunnelPort 192.1.1.1:8080 IsolateDestAddr\n", result);
+    }
+
+    @Test
+    public void testTransparentProxy() throws IOException {
+        TorSettings torSettings = mock(TorSettings.class);
+        when(torSettings.getTransparentProxyAddress()).thenReturn("192.1.1.1");
+        when(torSettings.getTransparentProxyPort()).thenReturn(8080);
+        OnionProxyContext context = mock(OnionProxyContext.class);
+        when(context.getSettings()).thenReturn(torSettings);
+        TorConfigBuilder builder = new TorConfigBuilder(context);
+        builder.transPortFromSettings();
+        String result = builder.asString();
+        assertEquals("TransPort 192.1.1.1:8080\n", result);
+    }
+
+    @Test
+    public void testDnsPort() throws IOException {
+        TorSettings torSettings = mock(TorSettings.class);
+        when(torSettings.getDnsPort()).thenReturn(5111);
+        OnionProxyContext context = mock(OnionProxyContext.class);
+        when(context.getSettings()).thenReturn(torSettings);
+        TorConfigBuilder builder = new TorConfigBuilder(context);
+        builder.dnsPortFromSettings();
+        String result = builder.asString();
+        assertEquals("DNSPort 5111\n", result);
+    }
+
+    @Test
+    public void testAddAddress() throws IOException {
+        OnionProxyContext context = mock(OnionProxyContext.class);
+        TorConfigBuilder builder = new TorConfigBuilder(context);
+        builder.addAddress("fieldName", "192.1.1.0", 8080, null);
+        String result = builder.asString();
+        assertEquals("fieldName 192.1.1.0:8080\n", result);
+    }
+
+    @Test
+    public void testAddAddressNoAddress() throws IOException {
+        OnionProxyContext context = mock(OnionProxyContext.class);
+        TorConfigBuilder builder = new TorConfigBuilder(context);
+        builder.addAddress("fieldName", null, 8080, null);
+        String result = builder.asString();
+        assertEquals("fieldName 8080\n", result);
+    }
+
+    @Test
+    public void testAddAddressNoPort() throws IOException {
+        OnionProxyContext context = mock(OnionProxyContext.class);
+        TorConfigBuilder builder = new TorConfigBuilder(context);
+        builder.addAddress("fieldName", "192.1.1.0", null, null);
+        String result = builder.asString();
+        assertEquals("fieldName 192.1.1.0:auto\n", result);
+    }
+
+    @Test
+    public void testAddAddressIllegalPort() throws IOException {
+        OnionProxyContext context = mock(OnionProxyContext.class);
+        TorConfigBuilder builder = new TorConfigBuilder(context);
+        builder.addAddress("fieldName", "192.1.1.0", 0, null);
+        String result = builder.asString();
+        assertEquals("fieldName 192.1.1.0:auto\n", result);
+    }
+
+    @Test
+    public void testAddAddressNull() throws IOException {
+        OnionProxyContext context = mock(OnionProxyContext.class);
+        TorConfigBuilder builder = new TorConfigBuilder(context);
+        builder.addAddress("fieldName", null, null, null);
+        String result = builder.asString();
+        assertEquals("", result);
     }
 }
