@@ -12,6 +12,8 @@ See the Apache 2 License for the specific language governing permissions and lim
 */
 package com.msopentech.thali.toronionproxy;
 
+import com.msopentech.thali.torsettings.TorSettings;
+
 /**
  * Default EventBroadcaster. broadcastBandwidth, broadcastLogMessage, broadcastStatus are all
  * no operations. If you need to implement these broadcast methods, then create a new class

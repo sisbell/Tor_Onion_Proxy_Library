@@ -1,7 +1,7 @@
 package com.msopentech.thali.android.toronionproxy;
 
 import android.content.Context;
-import com.msopentech.thali.toronionproxy.DefaultSettings;
+import com.msopentech.thali.torsettings.DefaultSettings;
 
 public class AndroidDefaultTorSettings extends DefaultSettings {
 

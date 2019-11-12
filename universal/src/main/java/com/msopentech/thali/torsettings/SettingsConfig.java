@@ -11,7 +11,7 @@ MERCHANTABLITY OR NON-INFRINGEMENT.
 See the Apache 2 License for the specific language governing permissions and limitations under the License.
 */
 
-package com.msopentech.thali.toronionproxy;
+package com.msopentech.thali.torsettings;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -19,7 +19,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotates TorConfigBuilder methods. When TorConfigBuilder.updateTorConfig is invoked, it will use this annotation
+ * Annotates TorSettingsBuilder methods. When TorSettingsBuilder.updateTorSettings is invoked, it will use this annotation
  * to automatically detect and use the associated method as part of building the config.
  *
  * The annotated method must have a no args.

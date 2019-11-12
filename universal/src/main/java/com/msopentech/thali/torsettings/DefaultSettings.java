@@ -1,7 +1,8 @@
-package com.msopentech.thali.toronionproxy;
+package com.msopentech.thali.torsettings;
 
 import java.util.Collections;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Provides some reasonable default settings. Override this class or create a new implementation to
@@ -23,8 +24,8 @@ public class DefaultSettings implements TorSettings {
     }
 
     @Override
-    public List<String> getCustomBridges() {
-        return Collections.emptyList();
+    public Set<String> getCustomBridges() {
+        return Collections.emptySet();
     }
 
     @Override
@@ -33,18 +34,18 @@ public class DefaultSettings implements TorSettings {
     }
 
     @Override
-    public String getEntryNodes() {
-        return null;
+    public Set<String> getEntryNodes() {
+        return Collections.emptySet();
     }
 
     @Override
-    public String getExcludeNodes() {
-        return null;
+    public Set<String> getExcludeNodes() {
+        return Collections.emptySet();
     }
 
     @Override
-    public String getExitNodes() {
-        return null;
+    public Set<String> getExitNodes() {
+        return Collections.emptySet();
     }
 
     @Override
@@ -58,8 +59,8 @@ public class DefaultSettings implements TorSettings {
     }
 
     @Override
-    public List<BridgeType> getBridgeTypes() {
-        return Collections.emptyList();
+    public Set<BridgeType> getBridgeTypes() {
+        return Collections.emptySet();
     }
 
     @Override
@@ -98,8 +99,11 @@ public class DefaultSettings implements TorSettings {
     }
 
     @Override
-    public String getReachableAddressPorts() {
-        return "*:80,*:443";
+    public Set<String> getReachableAddressPorts() {
+        Set<String> ports = new HashSet<>();
+        ports.add("*:80");
+        ports.add("*:443");
+        return ports;
     }
 
     @Override

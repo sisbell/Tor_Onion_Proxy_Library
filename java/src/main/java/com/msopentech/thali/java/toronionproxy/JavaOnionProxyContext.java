@@ -14,6 +14,7 @@ See the Apache 2 License for the specific language governing permissions and lim
 package com.msopentech.thali.java.toronionproxy;
 
 import com.msopentech.thali.toronionproxy.*;
+import com.msopentech.thali.torsettings.TorSettings;
 
 import java.io.*;
 

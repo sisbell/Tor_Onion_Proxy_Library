@@ -31,6 +31,7 @@ package com.msopentech.thali.android.toronionproxy;
 
 import com.msopentech.thali.toronionproxy.*;
 
+import com.msopentech.thali.torsettings.TorSettings;
 import net.freehaven.tor.control.EventHandler;
 
 import org.slf4j.Logger;
@@ -43,7 +44,6 @@ import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
-import java.io.File;
 import java.io.IOException;
 
 import static android.content.Context.CONNECTIVITY_SERVICE;

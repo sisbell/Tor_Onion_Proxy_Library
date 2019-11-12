@@ -33,7 +33,7 @@ import static com.msopentech.thali.toronionproxy.FileUtilities.setPerms;
  OnionProxyContext context = new JavaOnionProxyContext(torConfig, torInstaller, null);
  OnionProxyManager onionProxyManager = new OnionProxyManager(context);
 
- TorConfigBuilder builder = onionProxyManager.getContext().newConfigBuilder().updateTorConfig();
+ TorSettingsBuilder builder = onionProxyManager.getContext().newConfigBuilder().updateTorSettings();
  onionProxyManager.getContext().getInstaller().updateTorConfigCustom(builder.asString());
  onionProxyManager.setup();
 

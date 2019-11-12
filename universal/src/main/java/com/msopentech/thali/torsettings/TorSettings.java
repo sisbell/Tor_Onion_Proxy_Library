@@ -1,11 +1,11 @@
-package com.msopentech.thali.toronionproxy;
+package com.msopentech.thali.torsettings;
 
-import java.util.List;
+import java.util.Set;
 
 public interface TorSettings {
     boolean disableNetwork();
 
-    List<String> getCustomBridges();
+    Set<String> getCustomBridges();
 
     String getCustomTorrc();
 
@@ -13,17 +13,17 @@ public interface TorSettings {
 
     Integer getDnsPort();
 
-    String getEntryNodes();
+    Set<String> getEntryNodes();
 
-    String getExcludeNodes();
+    Set<String> getExcludeNodes();
 
-    String getExitNodes();
+    Set<String> getExitNodes();
 
     String getHttpTunnelHost();
 
     Integer getHttpTunnelPort();
 
-    List<BridgeType> getBridgeTypes();
+    Set<BridgeType> getBridgeTypes();
 
     String getProxyHost();
 
@@ -39,7 +39,7 @@ public interface TorSettings {
 
     String getProxyUser();
 
-    String getReachableAddressPorts();
+    Set<String> getReachableAddressPorts();
 
     String getRelayNickname();
 

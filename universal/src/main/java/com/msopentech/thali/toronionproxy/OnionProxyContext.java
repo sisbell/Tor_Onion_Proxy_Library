@@ -13,6 +13,8 @@ See the Apache 2 License for the specific language governing permissions and lim
 
 package com.msopentech.thali.toronionproxy;
 
+import com.msopentech.thali.torsettings.DefaultSettings;
+import com.msopentech.thali.torsettings.TorSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -204,10 +206,6 @@ abstract public class OnionProxyContext {
 
     public final TorSettings getSettings() {
         return settings;
-    }
-
-    public final TorConfigBuilder newConfigBuilder() {
-        return new TorConfigBuilder(this);
     }
     
     /**
