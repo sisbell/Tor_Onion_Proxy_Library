@@ -99,14 +99,29 @@ public final class TorConfigBuilder {
         return this;
     }
 
+    @SettingsConfig
+    public TorConfigBuilder bridgesFromSettings() {
+        try {
+            addBridgesFromResources();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return this;
+    }
+
     public TorConfigBuilder configurePluggableTransportsFromSettings(File pluggableTransportClient) throws IOException {
         List<String> supportedBridges = settings.getListOfSupportedBridges();
-        if (pluggableTransportClient == null || !settings.hasBridges() || supportedBridges.size() < 1) {
+        if (pluggableTransportClient == null || supportedBridges == null || supportedBridges.isEmpty()) {
             return this;
         }
 
-        if (!pluggableTransportClient.exists() || !pluggableTransportClient.canExecute()) {
+        if (!pluggableTransportClient.exists()) {
             throw new IOException("Bridge binary does not exist: " + pluggableTransportClient
+                    .getCanonicalPath());
+        }
+
+        if (!pluggableTransportClient.canExecute()) {
+            throw new IOException("Bridge binary is not executable: " + pluggableTransportClient
                     .getCanonicalPath());
         }
 
@@ -116,8 +131,6 @@ public final class TorConfigBuilder {
         if (supportedBridges.contains("meek")) {
             transportPluginMeek(pluggableTransportClient.getCanonicalPath());
         }
-        String type = supportedBridges.contains("meek") ? "meek_lite" : "obfs4";
-        addBridgesFromResources(type, 2);
         return this;
     }
 
@@ -502,7 +515,7 @@ public final class TorConfigBuilder {
 
     @SettingsConfig
     public TorConfigBuilder useBridgesFromSettings() {
-        return !settings.hasBridges() ? dontUseBridges() : this;
+        return settings.hasBridges() ? useBridges() : this;
     }
 
     public TorConfigBuilder virtualAddressNetwork(String address) {
@@ -531,12 +544,12 @@ public final class TorConfigBuilder {
      * </code>
      *
      */
-    TorConfigBuilder addBridgesFromResources(String type, int maxBridges) throws IOException {
+    TorConfigBuilder addBridgesFromResources() throws IOException {
         if(settings.hasBridges()) {
             InputStream bridgesStream = context.getInstaller().openBridgesStream();
             int formatType = bridgesStream.read();
-            if(formatType == 0) {
-                addBridges(bridgesStream, type, maxBridges);
+            if (formatType == 0) {
+                addBridges(bridgesStream);
             } else {
                 addCustomBridges(bridgesStream);
             }
@@ -547,23 +560,14 @@ public final class TorConfigBuilder {
     /**
      * Add bridges from bridges.txt file.
      */
-    private void addBridges(InputStream input, String bridgeType, int maxBridges) {
-        if (input == null || isNullOrEmpty(bridgeType) || maxBridges < 1) {
+    private void addBridges(InputStream input) {
+        if (input == null) {
             return;
         }
-        boolean hasAddedBridge = false;
         List<Bridge> bridges = readBridgesFromStream(input);
-        Collections.shuffle(bridges, new Random(System.nanoTime()));
-        int bridgeCount = 0;
         for (Bridge b : bridges) {
-            if (b.type.equals(bridgeType)) {
-                bridge(b.type, b.config);
-                hasAddedBridge = true;
-                if (++bridgeCount > maxBridges)
-                    break;
-            }
+            bridge(b.type, b.config);
         }
-        if(hasAddedBridge) useBridges();
     }
 
     /**
@@ -573,15 +577,12 @@ public final class TorConfigBuilder {
         if (input == null) {
             return;
         }
-        boolean hasAddedBridge = false;
         List<Bridge> bridges = readCustomBridgesFromStream(input);
         for (Bridge b : bridges) {
             if (b.type.equals("custom")) {
                 bridgeCustom(b.config);
-                hasAddedBridge = true;
             }
         }
-        if(hasAddedBridge) useBridges();
     }
 
     private static List<Bridge> readBridgesFromStream(InputStream input)  {
