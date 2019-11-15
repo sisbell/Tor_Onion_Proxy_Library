@@ -38,7 +38,7 @@ public final class TorConfigBuilder {
      * Updates the tor config for all methods annotated with SettingsConfig
      */
     public TorConfigBuilder updateTorConfig() throws Exception {
-        for(Method method : getClass().getMethods()) {
+        for (Method method : getClass().getMethods()) {
             for (Annotation annotation : method.getAnnotations()) {
                 if (annotation instanceof SettingsConfig) {
                     method.invoke(this);
@@ -62,7 +62,7 @@ public final class TorConfigBuilder {
         } catch (Exception e) {
             return false;
         } finally {
-            if (socket  != null) {
+            if (socket != null) {
                 try {
                     socket.close();
                 } catch (Exception ee) {
@@ -76,8 +76,7 @@ public final class TorConfigBuilder {
     }
 
     public TorConfigBuilder automapHostsOnResolve() {
-        buffer.append("AutomapHostsOnResolve 1").append('\n');
-        return this;
+        return writeTrueProperty("AutomapHostsOnResolve");
     }
 
     @SettingsConfig
@@ -94,9 +93,23 @@ public final class TorConfigBuilder {
 
     public TorConfigBuilder bridgeCustom(String config) {
         if (!isNullOrEmpty(config)) {
-            buffer.append("Bridge ").append(config).append('\n');
+            writeLine("Bridge", config);
         }
         return this;
+    }
+
+    public TorConfigBuilder clientTransportPlugins(List<String> supportedBridges, String clientPath) {
+        if (supportedBridges == null || supportedBridges.isEmpty()) {
+            return this;
+        }
+        String[] a = new String[supportedBridges.size() + 3];
+        a[0] = "ClientTransportPlugin";
+        for (int i = 1; i < a.length - 2; i++) {
+            a[i] = supportedBridges.get(i - 1);
+        }
+        a[a.length - 2] = "exec";
+        a[a.length - 1] = clientPath;
+        return writeLine(a);
     }
 
     public TorConfigBuilder configurePluggableTransportsFromSettings(File pluggableTransportClient) throws IOException {
@@ -109,32 +122,25 @@ public final class TorConfigBuilder {
             throw new IOException("Bridge binary does not exist: " + pluggableTransportClient
                     .getCanonicalPath());
         }
+        clientTransportPlugins(supportedBridges, pluggableTransportClient.getCanonicalPath());
 
-        if (supportedBridges.contains("obfs3") || supportedBridges.contains("obfs4")) {
-            transportPluginObfs(pluggableTransportClient.getCanonicalPath());
-        }
-        if (supportedBridges.contains("meek")) {
-            transportPluginMeek(pluggableTransportClient.getCanonicalPath());
-        }
         String type = supportedBridges.contains("meek") ? "meek_lite" : "obfs4";
         addBridgesFromResources(type, 2);
         return this;
     }
 
     public TorConfigBuilder cookieAuthentication() {
-        buffer.append("CookieAuthentication 1 ").append('\n');
-        buffer.append("CookieAuthFile ").append(context.getConfig().getCookieAuthFile().getAbsolutePath()).append("\n");
-        return this;
+        return writeTrueProperty("CookieAuthentication")
+                .writeLine("CookieAuthFile", context.getConfig().getCookieAuthFile().getAbsolutePath());
     }
 
     @SettingsConfig
     public TorConfigBuilder cookieAuthenticationFromSettings() {
         return settings.hasCookieAuthentication() ? cookieAuthentication() : this;
     }
-    
+
     public TorConfigBuilder connectionPadding() {
-        buffer.append("ConnectionPadding 1").append('\n');
-        return this;
+        return writeTrueProperty("ConnectionPadding");
     }
 
     @SettingsConfig
@@ -143,9 +149,7 @@ public final class TorConfigBuilder {
     }
 
     public TorConfigBuilder controlPortWriteToFile(String controlPortFile) {
-        buffer.append("ControlPortWriteToFile ").append(controlPortFile).append('\n');
-        buffer.append("ControlPort auto\n");
-        return this;
+        return writeLine("ControlPortWriteToFile", controlPortFile).writeLine("ControlPort auto");
     }
 
     @SettingsConfig
@@ -154,10 +158,9 @@ public final class TorConfigBuilder {
     }
 
     public TorConfigBuilder debugLogs() {
-        buffer.append("Log debug syslog").append('\n');
-        buffer.append("Log info syslog").append('\n');
-        buffer.append("SafeLogging 0").append('\n');
-        return this;
+        writeLine("Log debug syslog");
+        writeLine("Log info syslog");
+        return writeFalseProperty("SafeLogging");
     }
 
     @SettingsConfig
@@ -166,8 +169,7 @@ public final class TorConfigBuilder {
     }
 
     public TorConfigBuilder disableNetwork() {
-        buffer.append("DisableNetwork 1").append('\n');
-        return this;
+        return writeTrueProperty("DisableNetwork");
     }
 
     @SettingsConfig
@@ -176,8 +178,7 @@ public final class TorConfigBuilder {
     }
 
     public TorConfigBuilder dnsPort(String dnsPort) {
-        if (!isNullOrEmpty(dnsPort)) buffer.append("DNSPort ").append(dnsPort).append('\n');
-        return this;
+        return writeLine("DNSPort", dnsPort);
     }
 
     @SettingsConfig
@@ -186,35 +187,36 @@ public final class TorConfigBuilder {
     }
 
     public TorConfigBuilder dontUseBridges() {
-        buffer.append("UseBridges 0").append('\n');
-        return this;
+        return writeFalseProperty("UseBridges");
     }
 
     public TorConfigBuilder entryNodes(String entryNodes) {
         if (!isNullOrEmpty(entryNodes))
-            buffer.append("EntryNodes ").append(entryNodes).append('\n');
+            writeLine("EntryNodes", entryNodes);
         return this;
     }
 
     public TorConfigBuilder excludeNodes(String excludeNodes) {
         if (!isNullOrEmpty(excludeNodes))
-            buffer.append("ExcludeNodes ").append(excludeNodes).append('\n');
+            writeLine("ExcludeNodes", excludeNodes);
         return this;
     }
 
     public TorConfigBuilder exitNodes(String exitNodes) {
         if (!isNullOrEmpty(exitNodes))
-            buffer.append("ExitNodes ").append(exitNodes).append('\n');
+            writeLine("ExitNodes", exitNodes);
         return this;
     }
 
     public TorConfigBuilder geoIpFile(String path) {
-        if (!isNullOrEmpty(path)) buffer.append("GeoIPFile ").append(path).append('\n');
+        if (!isNullOrEmpty(path))
+            writeLine("GeoIPFile", path);
         return this;
     }
 
     public TorConfigBuilder geoIpV6File(String path) {
-        if (!isNullOrEmpty(path)) buffer.append("GeoIPv6File ").append(path).append('\n');
+        if (!isNullOrEmpty(path))
+            writeLine("GeoIPv6File", path);
         return this;
     }
 
@@ -233,17 +235,11 @@ public final class TorConfigBuilder {
                 settings.hasIsolationAddressFlagForTunnel() ? "IsolateDestAddr" : null);
     }
 
-    public TorConfigBuilder line(String value) {
-        if (!isNullOrEmpty(value)) buffer.append(value).append("\n");
-        return this;
-    }
-
     public TorConfigBuilder makeNonExitRelay(String dnsFile, int orPort, String nickname) {
-        buffer.append("ServerDNSResolvConfFile ").append(dnsFile).append('\n');
-        buffer.append("ORPort ").append(orPort).append('\n');
-        buffer.append("Nickname ").append(nickname).append('\n');
-        buffer.append("ExitPolicy reject *:*").append('\n');
-        return this;
+        writeLine("ServerDNSResolvConfFile", dnsFile);
+        writeAddress("ORPort", null, orPort, null);
+        writeLine("Nickname", nickname);
+        return writeLine("ExitPolicy reject *:*");
     }
 
     /**
@@ -274,8 +270,7 @@ public final class TorConfigBuilder {
     }
 
     public TorConfigBuilder proxyOnAllInterfaces() {
-        buffer.append("SocksListenAddress 0.0.0.0").append('\n');
-        return this;
+        return writeLine("SocksListenAddress 0.0.0.0");
     }
 
     @SettingsConfig
@@ -310,8 +305,8 @@ public final class TorConfigBuilder {
 
             if (proxyUser != null && proxyPass != null) {
                 if (proxyType.equalsIgnoreCase("socks5")) {
-                    buffer.append("Socks5ProxyUsername ").append(proxyUser).append('\n');
-                    buffer.append("Socks5ProxyPassword ").append(proxyPass).append('\n');
+                    writeLine("Socks5ProxyUsername", proxyUser);
+                    writeLine("Socks5ProxyPassword", proxyPass);
                 } else {
                     buffer.append(proxyType).append("ProxyAuthenticator ").append(proxyUser)
                             .append(':').append(proxyPort).append('\n');
@@ -335,7 +330,7 @@ public final class TorConfigBuilder {
 
     public TorConfigBuilder reachableAddressPorts(String reachableAddressesPorts) {
         if (!isNullOrEmpty(reachableAddressesPorts))
-            buffer.append("ReachableAddresses ").append(reachableAddressesPorts).append('\n');
+            writeLine("ReachableAddresses", reachableAddressesPorts);
         return this;
     }
 
@@ -347,8 +342,7 @@ public final class TorConfigBuilder {
     }
 
     public TorConfigBuilder reducedConnectionPadding() {
-        buffer.append("ReducedConnectionPadding 1").append('\n');
-        return this;
+        return writeTrueProperty("ReducedConnectionPadding");
     }
 
     @SettingsConfig
@@ -366,18 +360,15 @@ public final class TorConfigBuilder {
     }
 
     public TorConfigBuilder runAsDaemon() {
-        buffer.append("RunAsDaemon 1").append('\n');
-        return this;
+        return writeTrueProperty("RunAsDaemon");
     }
 
     public TorConfigBuilder safeSocksDisable() {
-        buffer.append("SafeSocks 0").append('\n');
-        return this;
+        return writeFalseProperty("SafeSocks");
     }
 
     public TorConfigBuilder safeSocksEnable() {
-        buffer.append("SafeSocks 1").append('\n');
-        return this;
+        return writeTrueProperty("SafeSocks");
     }
 
     @SettingsConfig
@@ -425,13 +416,11 @@ public final class TorConfigBuilder {
     }
 
     public TorConfigBuilder strictNodesDisable() {
-        buffer.append("StrictNodes 0\n");
-        return this;
+        return writeFalseProperty("StrictNodes");
     }
 
     public TorConfigBuilder strictNodesEnable() {
-        buffer.append("StrictNodes 1\n");
-        return this;
+        return writeTrueProperty("StrictNodes");
     }
 
     @SettingsConfig
@@ -440,13 +429,11 @@ public final class TorConfigBuilder {
     }
 
     public TorConfigBuilder testSocksDisable() {
-        buffer.append("TestSocks 0").append('\n');
-        return this;
+        return writeFalseProperty("TestSocks");
     }
 
     public TorConfigBuilder testSocksEnable() {
-        buffer.append("TestSocks 0").append('\n');
-        return this;
+        return writeTrueProperty("TestSocks");
     }
 
     @SettingsConfig
@@ -457,12 +444,12 @@ public final class TorConfigBuilder {
     @SettingsConfig
     public TorConfigBuilder torrcCustomFromSettings() throws UnsupportedEncodingException {
         return settings.getCustomTorrc() != null ?
-                line(new String(settings.getCustomTorrc().getBytes("US-ASCII"))) : this;
+                writeLine(new String(settings.getCustomTorrc().getBytes("US-ASCII"))) : this;
     }
 
     public TorConfigBuilder transPort(String transPort) {
         if (!isNullOrEmpty(transPort))
-            buffer.append("TransPort ").append(transPort).append('\n');
+            writeLine("TransPort", transPort);
         return this;
     }
 
@@ -471,20 +458,8 @@ public final class TorConfigBuilder {
         return transPort(settings.transPort());
     }
 
-    public TorConfigBuilder transportPluginMeek(String clientPath) {
-        buffer.append("ClientTransportPlugin meek_lite exec ").append(clientPath).append('\n');
-        return this;
-    }
-
-    public TorConfigBuilder transportPluginObfs(String clientPath) {
-        buffer.append("ClientTransportPlugin obfs3 exec ").append(clientPath).append('\n');
-        buffer.append("ClientTransportPlugin obfs4 exec ").append(clientPath).append('\n');
-        return this;
-    }
-
     public TorConfigBuilder useBridges() {
-        buffer.append("UseBridges 1").append('\n');
-        return this;
+        return writeTrueProperty("UseBridges");
     }
 
     @SettingsConfig
@@ -494,7 +469,7 @@ public final class TorConfigBuilder {
 
     public TorConfigBuilder virtualAddressNetwork(String address) {
         if (!isNullOrEmpty(address))
-            buffer.append("VirtualAddrNetwork ").append(address).append('\n');
+            writeLine("VirtualAddrNetwork", address);
         return this;
     }
 
@@ -503,26 +478,66 @@ public final class TorConfigBuilder {
         return virtualAddressNetwork(settings.getVirtualAddressNetwork());
     }
 
+    public TorConfigBuilder writeAddress(String fieldName, String address, Integer port, String flags) {
+        if (isNullOrEmpty(address) && port == null) {
+            return this;
+        }
+        buffer.append(fieldName).append(" ");
+        if (!isNullOrEmpty(address)) {
+            buffer.append(address).append(":");
+        }
+        if (port != null && port >= 0) {
+            buffer.append(port);
+        } else {
+            buffer.append("auto");
+        }
+        if (!isNullOrEmpty(flags)) {
+            buffer.append(" ").append(flags);
+        }
+        buffer.append('\n');
+        return this;
+    }
+
+    public TorConfigBuilder writeFalseProperty(String name) {
+        return writeLine(name, "0");
+    }
+
+    public TorConfigBuilder writeLine(String... values) {
+        StringBuilder sb = new StringBuilder();
+        if (values != null) {
+            for (String v : values) {
+                sb.append(v).append(" ");
+            }
+        }
+        if (sb.length() > 0) {
+            buffer.append(sb.toString().trim()).append("\n");
+        }
+        return this;
+    }
+
+    public TorConfigBuilder writeTrueProperty(String name) {
+        return writeLine(name, "1");
+    }
+
     /**
      * Adds bridges from a resource stream. This relies on the TorInstaller to know how to obtain this stream.
      * These entries may be type-specified like:
      *
      * <code>
-     *  obfs3 169.229.59.74:31493 AF9F66B7B04F8FF6F32D455F05135250A16543C9
+     * obfs3 169.229.59.74:31493 AF9F66B7B04F8FF6F32D455F05135250A16543C9
      * </code>
-     *
+     * <p>
      * Or it may just be a custom entry like
      *
      * <code>
-     *    69.163.45.129:443 9F090DE98CA6F67DEEB1F87EFE7C1BFD884E6E2F
+     * 69.163.45.129:443 9F090DE98CA6F67DEEB1F87EFE7C1BFD884E6E2F
      * </code>
-     *
      */
     TorConfigBuilder addBridgesFromResources(String type, int maxBridges) throws IOException {
-        if(settings.hasBridges()) {
+        if (settings.hasBridges()) {
             InputStream bridgesStream = context.getInstaller().openBridgesStream();
             int formatType = bridgesStream.read();
-            if(formatType == 0) {
+            if (formatType == 0) {
                 addBridges(bridgesStream, type, maxBridges);
             } else {
                 addCustomBridges(bridgesStream);
@@ -550,7 +565,7 @@ public final class TorConfigBuilder {
                     break;
             }
         }
-        if(hasAddedBridge) useBridges();
+        if (hasAddedBridge) useBridges();
     }
 
     /**
@@ -568,10 +583,10 @@ public final class TorConfigBuilder {
                 hasAddedBridge = true;
             }
         }
-        if(hasAddedBridge) useBridges();
+        if (hasAddedBridge) useBridges();
     }
 
-    private static List<Bridge> readBridgesFromStream(InputStream input)  {
+    private static List<Bridge> readBridgesFromStream(InputStream input) {
         List<Bridge> bridges = new ArrayList<>();
         try {
             BufferedReader br = new BufferedReader(new InputStreamReader(input, "UTF-8"));
@@ -589,12 +604,12 @@ public final class TorConfigBuilder {
         return bridges;
     }
 
-    private static List<Bridge> readCustomBridgesFromStream(InputStream input)  {
+    private static List<Bridge> readCustomBridgesFromStream(InputStream input) {
         List<Bridge> bridges = new ArrayList<>();
         try {
             BufferedReader br = new BufferedReader(new InputStreamReader(input, "UTF-8"));
             for (String line = br.readLine(); line != null; line = br.readLine()) {
-                if(line.isEmpty()) {
+                if (line.isEmpty()) {
                     continue;
                 }
                 bridges.add(new Bridge("custom", line));
